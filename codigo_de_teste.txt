@@ -1,0 +1,221 @@
+Conecta Api
+
+// step 1 para uma requisição:
+// criar uma função assincrona com async e await
+async function listarVideos(descricao,imagem,titulo,url){ // criamos uma  função assincrona criada, o async permite o uso do awayt dentro da função, 
+   
+    // criamos uma variavel onde vamos atribuir como valor o metodo fetch(), 
+    //a quem passareemos uma url para quee seeja feita uma requisição http 
+    //para o caminho espeeecificado na url, e o resultado sera armazenado na constante conection
+    const conection= await fetch("http://localhost:3000/videos"); 
+
+    const resDaRequestConvertidaEmJson = await conection.json(); 
+    // convertemos resposnta em uma string json console.log(conection); 
+    // a resposta chega no formato de um objeto response, ou object javascript
+    
+    console.log(resDaRequestConvertidaEmJson); // conveertido para json
+    return resDaRequestConvertidaEmJson;
+
+}
+
+async function criarVideo(imagem,titulo,url,descricao){ // metodo para gravar dados no DB
+    const conection = await fetch("http://localhost:3000/videos",{
+        method:"POST", // define o tipo de requisição
+        headers:{"Content-type":"appication/json"}, // indica o tipo do conteudo que esta sendo enviado
+                                                    // e application/json  que é o valor de content-type define que o corpo da requisição esta no formato JSON 
+
+        body:JSON.stringify({/**Esse trecho de código está preparando o corpo (body) 
+                                da requisição HTTP, convertendo um objeto JavaScript em uma string JSON. 
+                                Isso é necessário porque, ao enviar dados para um servidor, eles precisam 
+                                ser serializados em um formato que possa ser interpretado adequadamente. */
+            imagem : imagem,
+            titulo : titulo,
+            url : url,
+            descricao :`${descricao} mil visualizações`
+        })
+    });
+    
+    const resPostConvertidoEmJson = await conection.json(); // converte a resposta da requisiççao par json
+    return resPostConvertidoEmJson; // retorna a reesposta da requisição
+
+    /**
+     * obs.: apesar de o metodo em questão ser do tipo post, ou seja: ele esta enviando dados para o servidor ou DB.
+     * mais mesmo assim apesar do metodo post ser usado para enviar dados: 
+     * A resposta de uma requisição POST geralmente serve para informar se a operação foi bem-sucedida, 
+     * ou pode até mesmo enviar de volta dados adicionais.
+     * 
+     */
+}
+
+listarVideos()
+
+export const conectaApi = {listarVideos}
+
+
+CriarVideo
+
+import { conectaApi } from "./conectaApi.js";
+
+const form = document.querySelector("[data-formulario]");
+
+
+async function criarVideos(evento){
+    console.log("função criar videos chamada");
+       
+    evento.preventDefault();/** A função preventDefault() em JavaScript é um método que faz parte do objeto Event. Ele é usado para impedir que a ação padrão do evento ocorra. Isso é especialmente útil quando você deseja evitar comportamentos padrão que o navegador normalmente executaria em resposta a um evento, como o envio de um formulário ou a navegação para um link. */
+    
+        const url = document.querySelector("[data-url]").value;
+        const titulo = document.querySelector("[data-titulo]").value;
+        const imagem = document.querySelector("[data-imagem]").value;
+        
+    
+
+    /** a descrição ela não esta sendo enviada pelo formulario nos a criaremos aqui */
+     let random = Math.random()*10
+     const descricao  = Math.floor( (Math.random()*10)*random).toString();
+
+    /**chamar a função que vai enviar os dados para ser gravados do DB  */
+     await conectaApi.criarVideo(imagem,titulo,url,descricao);
+
+     // caso a requisição post  tenha sucesso, redicionaremos para a pgiana de feedback positivo da requisiççao post
+     window.location.href = "../pages/envio-concluido.html";
+}
+
+
+/**abaixo temos o ouvinte, que quando acontecer o evento submit, ele captura o evento
+ * passa o objeto do evento como argumento da função criarvideos
+ */
+form.addEventListener("submit",evento => criarVideos(evento)); 
+
+
+
+ListarVideos
+
+import {conectaApi}from "./conectaApi.js"; // importamos uma propriedade chamada conectaApi, do arquivo conectaApi.js, 
+// nessa propriedade conten um função assincrona que faz uma requisição do tipo get que retorna um objeto json
+
+const lista = document.querySelector("[data-lista]") // selecionamos o elemento ul pelo atributo data
+/**
+ * O atributo data-* permite que você armazene informações que não têm um 
+ * significado específico na marcação HTML padrão. Isso é útil para associar 
+ * dados adicionais a elementos sem que eles sejam visíveis para o usuário.
+ * 
+ * obs.: eu testei o uso de um id="data-lista" e class="data-lista" e a aplicação funcionol normalmente, 
+ * 
+ * conclusão no nosso caso aqui o atributo data-lista esta sendo usado apenas para 
+ * selecionar o elemento ul, onde adicionaremos elemnetos filhos para construir nossos
+ * cards na listagens de videos, 
+ * porem é recomendados em casos em que precisamos passar dados para o elemento html, dados que não se encaixão no emento html
+ */
+
+
+// criamos uma função para que vai contruir um card, essa função recebera 4 parametros, que são dados
+// que serão usados na construção de cada card que ela construir
+function constroiCard(descricao,imagem,titulo,url){ 
+    const video = document.createElement("li"); // criamos um elemento li, que sera o container de cada card
+    video.className = "videos__item"; // atribuimos no li uma classe com nome videos__item, responsavel pela estilização do card
+    
+    /** na linha de baixo no innerHtml nos criamos a extrutura html do card que sera criado, e as 
+     * variaveis ${} entre as chaves serão  recebidas  por parametros e os dados contidos nelas serão 
+     * exibidas no card que esta extrutura html criara, 
+     */
+    video.innerHTML =` <iframe width="100%" height="72%" src="${url}" 
+    title="${titulo}" frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowfullscreen></iframe>
+<div class="descricao-video">
+    <img src="${imagem}" alt="logo canal alura">
+    <h3>${titulo}</h3>
+    <p>${descricao}</p>
+</div>`
+
+return video;// aqui retornamos um card pronto para ser exibido
+}
+
+// funçã oqeu implemeentara a listagem dos videos: aqui sera chamado a função que cria os cards 
+// e aqui que sera passado para ela os argumentos que são os dados relevantes para ser exibidos nos cardis
+async function listarVideo(){ 
+
+    // chama a função listarVideos() importado do arquivo conectaApi.js: essa função retorna uma lista 
+    //de  objeto json
+    // os objetos json retornado pela função listarVideos() sera armazenado na const listApi
+    // nesse objeto tem os dados que serão passados por parameetro para a função constroiCard()
+    const listApi = await conectaApi.listarVideos();
+    /**
+     * com a  lista de objeto json {a,b,c,d} armazenado na listApi, vamos percorrer essa lista com um forEach
+     * e em cada iteração vamos pegar os elemmentos da iteração em questão, 
+     * chamaremos o elemento ul selecionado pelo atributo data-lista e armazenado na const lista
+     * a partir desse elemento armazendado na const lista, chamaremos o metodo appendChild()
+     * e através desse metodo passaremos como filho de ul(lista) o card criado pelo metodo constroiCard
+     * e é exatamente aqui qeu os dados do objeto json são passados como parametro para o metodo constroi card
+     * em cada iteração, é passado para o metodo um objeto json contido na lista
+     * cada objeto contem os seguinte dados: descricao, imagem,titulo e url,  
+     */
+    listApi.forEach(element => {
+        lista.appendChild(constroiCard(element.descricao,element.imagem,element.titulo,element.url));
+    });
+}
+
+listarVideo()
+
+
+
+
+
+
+
+/**
+ * 
+ * // step 1 para uma requisição:
+// criar uma função assincrona com async e await
+async function listarVideos(descricao,imagem,titulo,url){ // criamos uma  função assincrona criada, o async permite o uso do awayt dentro da função, 
+   
+    // criamos uma variavel onde vamos atribuir como valor o metodo fetch(), 
+    //a quem passareemos uma url para quee seeja feita uma requisição http 
+    //para o caminho espeeecificado na url, e o resultado sera armazenado na constante conection
+    const conection= await fetch("http://localhost:3000/videos"); 
+
+    const resDaRequestConvertidaEmJson = await conection.json(); 
+    // convertemos resposnta em uma string json console.log(conection); 
+    // a resposta chega no formato de um objeto response, ou object javascript
+    
+    console.log(resDaRequestConvertidaEmJson); // conveertido para json
+    return resDaRequestConvertidaEmJson;
+
+}
+
+async function criarVideo(imagem,titulo,url,descricao){ // metodo para gravar dados no DB
+    const conection = await fetch("http://localhost:3000/videos",{
+        method:"POST", // define o tipo de requisição
+        headers:{"Content-type":"appication/json"}, // indica o tipo do conteudo que esta sendo enviado
+                                                    // e application/json  que é o valor de content-type define que o corpo da requisição esta no formato JSON 
+
+        body:JSON.stringify({/**Esse trecho de código está preparando o corpo (body) 
+                                da requisição HTTP, convertendo um objeto JavaScript em uma string JSON. 
+                                Isso é necessário porque, ao enviar dados para um servidor, eles precisam 
+                                ser serializados em um formato que possa ser interpretado adequadamente. */
+                                imagem : imagem,
+                                titulo : titulo,
+                                url : url,
+                                descricao :`${descricao} mil visualizações`
+                            })
+                        });
+                        
+                        const resPostConvertidoEmJson = await conection.json(); // converte a resposta da requisiççao par json
+                        return resPostConvertidoEmJson; // retorna a reesposta da requisição
+                    
+                        /**
+                         * obs.: apesar de o metodo em questão ser do tipo post, ou seja: ele esta enviando dados para o servidor ou DB.
+                         * mais mesmo assim apesar do metodo post ser usado para enviar dados: 
+                         * A resposta de uma requisição POST geralmente serve para informar se a operação foi bem-sucedida, 
+                         * ou pode até mesmo enviar de volta dados adicionais.
+                         * 
+                         */
+                    }
+                    
+                    
+                    
+ * 
+ * 
+ */
+
